@@ -1,10 +1,14 @@
 import docker
 
-dockerClient = docker.from_env()
+docker_client = docker.from_env()
 
-print('Container list')
-containers = dockerClient.containers.list(all=True)
+print('Is server responsive:')
+print(docker_client.ping())
+
+containers = docker_client.containers.list(all=True)
+print('\nContainer list:')
 for container in containers:
-    print(container.id)
-    print(container.name)
-    print(container.attrs)
+    print('ID: ', container.id)
+    print('Name: ', container.name)
+    print('Image: ', container.image)
+    print('Status: ', container.status, '\n')
