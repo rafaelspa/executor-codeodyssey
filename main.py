@@ -1,17 +1,17 @@
 import docker
 
-dockerClient = docker.from_env()
-
-print('Container list')
-containers = dockerClient.containers.list(all=True)
-for container in containers:
-    print(container.id)
-    print(container.name)
-    print(container.attrs)
-
-# from docs at https://github.com/docker/docker-py
-
 def main():
+    dockerClient = docker.from_env()
+
+    print('Container list')
+    containers = dockerClient.containers.list(all=True)
+    for container in containers:
+        print(container.id)
+        print(container.name)
+        print(container.attrs)
+
+    # from docs at https://github.com/docker/docker-py
+
     print("## Docker Py env")
     client = docker.from_env()
     print(client.info(), "\n")
@@ -37,6 +37,7 @@ def main():
     print("## Stopping containers")
     for container in containerList:
         container.stop()
+        print("container stopped")
     print()
 
     # Removing all containers not used
