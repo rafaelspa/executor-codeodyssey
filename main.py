@@ -1,5 +1,6 @@
 import docker
 
+
 def main():
     docker_client = docker.from_env()
 
@@ -40,6 +41,7 @@ def main():
     for log in log_output:
         log_line = log.decode().rstrip()
         print(log_line)
+
 
 if __name__ == "__main__":
     main()
