@@ -1,58 +1,47 @@
 import docker
 
+
 def main():
-    dockerClient = docker.from_env()
+    docker_client = docker.from_env()
 
-    print('Container list')
-    containers = dockerClient.containers.list(all=True)
-    for container in containers:
-        print(container.id)
-        print(container.name)
-        print(container.attrs)
+    print('Is server responsive:')
+    print(docker_client.ping())
 
-    # from docs at https://github.com/docker/docker-py
+    print("## Pulling nginx image")
+    print(docker_client.images.pull('nginx'), '\n')
 
-    print("## Docker Py env")
-    client = docker.from_env()
-    print(client.info(), "\n")
+    images = docker_client.images.list(all=True)
+    print('\nImage list:')
+    for image in images:
+        print('ID: ', image.id)
+        print(f'Tags: ${image.tags}\n')
 
     print('## Container creation: client.containers.run("ubuntu:latest", "echo hello world")')
-    print(client.containers.run("ubuntu:latest", "echo hello world"), "\n")
+    print(docker_client.containers.run("ubuntu:latest", "echo hello world"), "\n")
 
-    print('## Run container in background:')
-    client.containers.run("bfirsh/reticulate-splines", detach=True)
-    print('"client.containers.run("bfirsh/reticulate-splines", detach=True)"', "\n")
+    containers = docker_client.containers.list(all=True)
+    print('Container list:')
+    for container in containers:
+        print('ID: ', container.id)
+        print('Name: ', container.name)
+        print('Image: ', container.image)
+        print(f'Status: ${container.status}\n')
 
-    print("## Container list")
-    containerList = client.containers.list()
-    print(containerList, "\n")
+    optional_container = next((c for c in containers if 'whalesay-py' in c.name), None)
+    print(optional_container)
+    if not optional_container:
+        print('Creating container whalesay-py . . .')
+        created_container = docker_client.containers.create('docker/whalesay', command=['cowsay', 'hello there'],
+                                                            name='whalesay-py')
+        created_container.start()
+        print('Container created and started')
+        optional_container = created_container
 
-    ## Manage containers
-    container = client.containers.get(client.containers.list()[0].short_id)
-    print('## Managing container "', container.short_id, '"')
-    print('# config image\n',container.attrs['Config']['Image'])
-    print('# logs\n',container.logs())
-    print()
+    log_output = optional_container.logs(stream=True, stderr=True, stdout=True, timestamps=False, tail="all")
+    for log in log_output:
+        log_line = log.decode().rstrip()
+        print(log_line)
 
-    print("## Stopping containers")
-    for container in containerList:
-        container.stop()
-        print("container stopped")
-    print()
-
-    # Removing all containers not used
-    client.containers.prune()
-
-    ## Stream logs
-    # for line in container.logs(stream=True):
-    #    print(line.strip())
-
-    ## Manage images
-    print("## Pulling nginx image")
-    print(client.images.pull('nginx'), '\n')
-
-    print("## Listing images")
-    print(client.images.list(), "\n")
 
 if __name__ == "__main__":
     main()
