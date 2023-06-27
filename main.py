@@ -18,3 +18,17 @@ for container in containers:
     print('Name: ', container.name)
     print('Image: ', container.image)
     print(f'Status: ${container.status}\n')
+
+optional_container = next((c for c in containers if 'whalesay-py' in c.name), None)
+print(optional_container)
+if not optional_container:
+    print('Creating container whalesay-py . . .')
+    created_container = docker_client.containers.create('docker/whalesay', command=['cowsay', 'hello there'], name='whalesay-py')
+    created_container.start()
+    print('Container created and started')
+    optional_container = created_container
+
+log_output = optional_container.logs(stream=True, stderr=True, stdout=True, timestamps=False, tail="all")
+for log in log_output:
+    log_line = log.decode().rstrip()
+    print(log_line)
