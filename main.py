@@ -42,6 +42,33 @@ def main():
         log_line = log.decode().rstrip()
         print(log_line)
 
+    commands = []
+    print(type(commands))
+    commands.append(('cowsay', 'monday'))
+    commands.append(('cowsay', 'tuesday'))
+    commands.append(('cowsay', 'wednesday'))
+    command_result = {}
+    print(type(command_result))
+    # command_result[('cowsay', 'weekend')] = "weekend" #adding a k-v
+    print(command_result)
+
+    for command_to_run in commands:
+        print('\n\niteration of command ', command_to_run, type(command_to_run))
+        command_container = docker_client.containers.create('docker/whalesay', command=command_to_run, name='command-container')
+        command_container.start()
+        command_container_output = command_container.logs(stream=True, stderr=True, stdout=True, timestamps=False, tail="all")
+        log_lines = []
+        for log in command_container_output:
+            log_line = log.decode().rstrip()
+            log_lines.append(log_line)
+            print(log_line)
+        command_result[command_to_run] = log_lines
+        print(log_lines, type(log_lines))
+        command_container.stop()
+        command_container.remove()
+    print(command_result)
+
+
 
 if __name__ == "__main__":
     main()
