@@ -41,7 +41,8 @@ def main():
     log_output = optional_container.logs(stream=True,
                                          stderr=True,
                                          stdout=True,
-                                         timestamps=False, tail="all")
+                                         timestamps=False,
+                                         tail='all')
     for log in log_output:
         log_line = log.decode().rstrip()
         print(log_line)
