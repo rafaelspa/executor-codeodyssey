@@ -29,6 +29,10 @@ def main():
 
     optional_container = next((c for c in containers if 'whalesay-py' in c.name), None)
     print(optional_container)
+
+    if optional_container == None:
+        docker_client.images.pull('docker/whalesay')
+
     if not optional_container:
         print('Creating container whalesay-py . . .')
         created_container = docker_client.containers.create('docker/whalesay',
