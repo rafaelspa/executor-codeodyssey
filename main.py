@@ -1,7 +1,6 @@
 import docker
 import os
 
-
 def main():
     docker_client = docker.from_env()
 
@@ -90,7 +89,12 @@ def main():
         temurin_git_image = docker_client.images.get('eclipse-temurin-git:17')
     except:      
         with open('.Dockerfile', 'w') as file:
-            file.write('FROM eclipse-temurin:17\nRUN apt-get update && apt-get install -y git')
+            file.write(
+            '''
+                FROM eclipse-temurin:17\n
+                RUN apt-get update && apt-get install -y git
+            '''
+            )
 
         temurin_git_image, build_logs = docker_client.images.build(
             path=r'.',
@@ -112,21 +116,47 @@ def main():
         temurin_git_container = docker_client.containers.create(
             image=temurin_git_image,
             name='eclipse-temurin-git',
-            detach=True,
             working_dir='/app'
         )
 
     # Running the container
     temurin_git_container.start()
 
-    exec_result = temurin_git_container.exec_run('git init')
-    output = exec_result.output.decode('utf-8')
+    exec_result_git_clone = temurin_git_container.exec_run(
+        cmd='git clone https://github.com/rafaelspa/hello-test-springboot.git'
+    )
+    output = exec_result_git_clone.output.decode('utf-8')
     print(output)
 
-    exec_result = temurin_git_container.exec_run('git status')
-    output = exec_result.output.decode('utf-8')
-    print(output)
+    print(temurin_git_container.exec_run(
+        cmd='cd'
+    ).output.decode('utf-8'))
 
+
+    # temurin_git_container.exec_run(
+    #     cmd='chmod +x ./hello-test-springboot/gradlew'
+    # )
+
+    # exec_result_gradlewrun = temurin_git_container.exec_run(
+    #     cmd='./hello-test-springboot/gradlew bootRun'
+    # )
+    # print(exec_result_gradlewrun)
+    # output = exec_result_gradlewrun.output.decode('utf-8')
+    # print(output)
+
+    # # The previous exec_run command stops the container
+    # temurin_git_container.restart()
+
+    # exec_result_ls = temurin_git_container.exec_run(
+    #     cmd='ls -la ./hello-test-springboot'
+    # )
+    # output = exec_result_ls.output.decode('utf-8')
+    # print(output)
+
+    # temurin_git_container.stop()
+
+    # # docker_client.containers.prune()
+    # docker_client.images.prune()
 
 if __name__ == '__main__':
     main()
