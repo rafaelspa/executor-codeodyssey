@@ -2,6 +2,7 @@ import docker
 import os
 
 def main():
+    global temurin_gradlew_container
     docker_client = docker.from_env()
 
     # print('Is server responsive:')
@@ -83,61 +84,81 @@ def main():
     #     print(f'\nKey: {type(key)} {key}')
     #     print(f'Value: {type(value)}\n {value}')
 
-    docker_client.images.pull('eclipse-temurin:17')
+    # docker_client.images.pull('eclipse-temurin:17')
 
-    try:
-        temurin_git_image = docker_client.images.get('eclipse-temurin-git:17')
-    except:      
-        with open('.Dockerfile', 'w') as file:
-            file.write(
-            '''
-                FROM eclipse-temurin:17\n
-                RUN apt-get update && apt-get install -y git
-            '''
-            )
+    project_name = "gradlew-project"
+    image_tag_name = "temurin-gradlew:17"
+    container_name = "temurin_gradlew"
 
-        temurin_git_image, build_logs = docker_client.images.build(
-            path=r'.',
-            dockerfile='.Dockerfile',
-            tag='eclipse-temurin-git:17',
-            rm=True
+    # Create Dockerfile, overwriting preexistent
+    with open('.Dockerfile', 'w') as file:
+        file.write(
+            '''
+            FROM eclipse-temurin:17\n
+            RUN apt-get update\n
+            RUN mkdir /app\n
+            COPY {project_name} /app/{project_name}\n
+            WORKDIR /app\n
+            CMD ["./gradlew", "test"]
+        '''.format(project_name=project_name)
         )
 
-        if os.path.exists('./.Dockerfile'):
-            os.remove('./.Dockerfile')
-
-    container_list = docker_client.containers.list(all=True)
-
-    for container in container_list:
-        if container.name == "eclipse-temurin-git":
-            temurin_git_container = docker_client.containers.get('eclipse-temurin-git')
-            break
-    else:
-        temurin_git_container = docker_client.containers.create(
-            image=temurin_git_image,
-            name='eclipse-temurin-git',
-            working_dir='/app'
-        )
-
-    # Running the container
-    temurin_git_container.start()
-
-    exec_result_git_clone = temurin_git_container.exec_run(
-        cmd='git clone https://github.com/rafaelspa/hello-test-springboot.git'
+    # build an image from the Dockerfile
+    temurin_gradlew_image, build_logs = docker_client.images.build(
+        path=r'.',
+        dockerfile='.Dockerfile',
+        tag=image_tag_name,
+        rm=True
     )
-    output = exec_result_git_clone.output.decode('utf-8')
-    print(output)
 
-    print(temurin_git_container.exec_run(
-        cmd='cd'
-    ).output.decode('utf-8'))
+    # delete the Dockerfile
+    if os.path.exists('./.Dockerfile'):
+        os.remove('./.Dockerfile')
+
+    # Create a container from the image
+    temurin_gradlew_container = docker_client.containers.create(
+        image=temurin_gradlew_image,
+        name=container_name,
+        working_dir=f'/app/{project_name}'.format(project_name=project_name)
+    )
+
+    # Start the container
+    temurin_gradlew_container.start()
+
+    # Create logs
+    logs = temurin_gradlew_container.logs(
+        stream=True,
+        stderr=True,
+        stdout=True,
+        timestamps=False,
+        tail='all'
+    )
+
+    log_lines = []
+    for log in logs:
+        log_line = log.decode().rstrip()
+        print(log_line)
+
+    temurin_gradlew_container.stop()
+    temurin_gradlew_container.remove()
 
 
-    # temurin_git_container.exec_run(
+
+    # exec_result_git_clone = temurin_gradlew_container.exec_run(
+    #     cmd='git clone https://github.com/rafaelspa/hello-test-springboot.git'
+    # )
+    # output = exec_result_git_clone.output.decode('utf-8')
+    # print(output)
+
+    # print(temurin_gradlew_container.exec_run(
+    #     cmd='cd'
+    # ).output.decode('utf-8'))
+
+    # temurin_gradlew_container.exec_run(
     #     cmd='chmod +x ./hello-test-springboot/gradlew'
     # )
 
-    # exec_result_gradlewrun = temurin_git_container.exec_run(
+    # exec_result_gradlewrun = temurin_gradlew_container.exec_run(
     #     cmd='./hello-test-springboot/gradlew bootRun'
     # )
     # print(exec_result_gradlewrun)
@@ -145,18 +166,19 @@ def main():
     # print(output)
 
     # # The previous exec_run command stops the container
-    # temurin_git_container.restart()
+    # temurin_gradlew_container.restart()
 
-    # exec_result_ls = temurin_git_container.exec_run(
+    # exec_result_ls = temurin_gradlew_container.exec_run(
     #     cmd='ls -la ./hello-test-springboot'
     # )
     # output = exec_result_ls.output.decode('utf-8')
     # print(output)
 
-    # temurin_git_container.stop()
+    # temurin_gradlew_container.stop()
 
     # # docker_client.containers.prune()
     # docker_client.images.prune()
+
 
 if __name__ == '__main__':
     main()
